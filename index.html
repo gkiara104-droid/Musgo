@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Musgo</title>
+<meta name="theme-color" content="#2d5016">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Musgo">
+<link rel="manifest" id="pwa-manifest">
+<link rel="apple-touch-icon" id="pwa-icon">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -640,7 +646,26 @@ input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.5; cursor: po
 /* ── NOTES LABEL ── */
 .notes-hint { font-size: 0.68rem; color: var(--ink4); margin-top: 6px; font-style: italic; }
 
-/* ── RESPONSIVE ── */
+/* ── INSTALL BTN ── */
+.btn-install {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  padding: 6px 14px;
+  border-radius: 40px;
+  cursor: pointer;
+  border: 1px solid var(--sage);
+  background: var(--sage-pale);
+  color: var(--forest);
+  transition: all 0.15s;
+  display: none;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.btn-install:hover { background: var(--sage-light); }
+.btn-install.visible { display: flex; }
 @media(max-width:580px){
   .char-panel { grid-template-columns: 1fr; }
   .level-circle { margin: 0 auto; }
@@ -674,6 +699,10 @@ select.field {
     <div class="hstat"><div class="hstat-val" id="h-str">0</div><div class="hstat-lbl">Racha</div></div>
     <div class="hsep"></div>
     <div class="hstat"><div class="hstat-val" id="h-hp">100</div><div class="hstat-lbl">Vida</div></div>
+    <button class="btn-install" id="install-btn" onclick="installPWA()">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 2v9M4 8l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 13h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Instalar app
+    </button>
   </div>
 </header>
 
@@ -684,6 +713,9 @@ select.field {
   <button class="nb" onclick="showPage('medicacion')">Medicación</button>
   <button class="nb" onclick="showPage('ciclo')">Ciclo</button>
   <button class="nb" onclick="showPage('tareas')">Tareas</button>
+  <button class="nb" onclick="showPage('asignaturas')">Asignaturas</button>
+  <button class="nb" onclick="showPage('examenes')">Exámenes</button>
+  <button class="nb" onclick="showPage('proyectos')">Proyectos</button>
   <button class="nb" onclick="showPage('logros')">Logros</button>
 </nav>
 
@@ -725,4 +757,1451 @@ select.field {
       <div class="mc-sub">vasos</div>
     </div>
     <div class="mini-card">
-      <div class="mc-label">Estudio 
+      <div class="mc-label">Estudio hoy</div>
+      <div class="mc-val" style="font-size:1.2rem" id="d-study">0 h</div>
+      <div class="mc-sub" id="d-study-sessions">0 sesiones</div>
+    </div>
+  </div>
+
+  <div class="slabel mb16">Hábitos de hoy</div>
+  <div class="g2 mb24">
+    <div class="card">
+      <div style="font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--moss);margin-bottom:10px">Estudio</div>
+      <div id="h-est-prev"></div>
+    </div>
+    <div class="card">
+      <div style="font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--moss);margin-bottom:10px">Bienestar</div>
+      <div id="h-sal-prev"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════ ESTUDIO ═══════════ -->
+<div id="page-estudio" class="page">
+
+  <div class="slabel mb16">Hábitos de Estudio</div>
+  <div class="card mb24" id="h-est-full"></div>
+
+  <div class="slabel mb16">Tiempo de estudio</div>
+  <div class="card mb24">
+    <div style="display:flex;gap:8px;margin-bottom:10px;border-bottom:1px solid var(--cream2);padding-bottom:10px">
+      <button class="btn btn-sm" id="mode-range-btn" onclick="setStudyMode('range')" style="background:var(--forest);border-color:var(--forest);color:var(--cream);">Hora inicio — fin</button>
+      <button class="btn btn-outline btn-sm" id="mode-dur-btn" onclick="setStudyMode('dur')">Solo duración</button>
+    </div>
+
+    <!-- MODE: range -->
+    <div id="study-mode-range">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px">
+        <div>
+          <div style="font-size:0.62rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px">Inicio</div>
+          <input type="time" id="study-from" style="background:var(--cream);border:1px solid var(--cream3);border-radius:6px;color:var(--ink);font-family:'DM Sans',sans-serif;font-size:0.9rem;padding:8px 10px;outline:none;width:130px;">
+        </div>
+        <div>
+          <div style="font-size:0.62rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px">Fin</div>
+          <input type="time" id="study-to" style="background:var(--cream);border:1px solid var(--cream3);border-radius:6px;color:var(--ink);font-family:'DM Sans',sans-serif;font-size:0.9rem;padding:8px 10px;outline:none;width:130px;">
+        </div>
+      </div>
+    </div>
+
+    <!-- MODE: duration -->
+    <div id="study-mode-dur" style="display:none">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px">
+        <div>
+          <div style="font-size:0.62rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px">Horas</div>
+          <input type="number" id="study-dur-h" min="0" max="12" value="0" style="background:var(--cream);border:1px solid var(--cream3);border-radius:6px;color:var(--ink);font-family:'DM Sans',sans-serif;font-size:0.9rem;padding:8px 10px;outline:none;width:80px;">
+        </div>
+        <div>
+          <div style="font-size:0.62rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px">Minutos</div>
+          <input type="number" id="study-dur-m" min="0" max="59" value="0" style="background:var(--cream);border:1px solid var(--cream3);border-radius:6px;color:var(--ink);font-family:'DM Sans',sans-serif;font-size:0.9rem;padding:8px 10px;outline:none;width:80px;">
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px">
+      <div style="flex:1;min-width:140px">
+        <div style="font-size:0.62rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px">Materia / nota</div>
+        <input type="text" id="study-label" class="field" placeholder="">
+      </div>
+      <button class="btn btn-forest" onclick="addStudySession()" style="align-self:flex-end">Registrar sesión</button>
+    </div>
+
+    <div id="study-log"></div>
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--cream2);display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:0.65rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink4)">Total hoy</span>
+      <span style="font-family:'Playfair Display',serif;font-size:1.3rem;color:var(--forest)" id="study-total-disp">0 h 0 min</span>
+    </div>
+  </div>
+
+  <div class="slabel mb16">Notas rápidas</div>
+  <div class="card">
+    <textarea class="field" id="notas-area" rows="5" placeholder=""></textarea>
+    <div class="notes-hint">Guardado automáticamente.</div>
+  </div>
+
+</div>
+
+<!-- ═══════════ SALUD ═══════════ -->
+<div id="page-salud" class="page">
+
+  <div class="slabel mb16">Hábitos de Bienestar</div>
+  <div class="card mb24" id="h-sal-full"></div>
+
+  <div class="slabel mb16">Rutina Nocturna</div>
+  <div class="card mb24" id="h-noc-full"></div>
+
+  <div class="slabel mb16">Hidratación</div>
+  <div class="card">
+    <div style="font-size:0.8rem;color:var(--ink3);margin-bottom:8px">Meta diaria: 8 vasos — clave con artritis e hiperlaxitud</div>
+    <div class="water-dots" id="water-dots"></div>
+    <div class="bar-row" style="margin-top:10px">
+      <div class="bar-meta"><span class="bar-name">Progreso</span><span class="bar-vals" id="water-lbl">0 / 8</span></div>
+      <div class="bar-track"><div class="bar-fill bf-water" id="water-bar" style="width:0%"></div></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════ MEDICACIÓN ═══════════ -->
+<div id="page-medicacion" class="page">
+
+  <div class="slabel mb16">Adolonta (Tramadol) — Registro diario</div>
+
+  <div class="med-card">
+    <div class="med-top">
+      <div>
+        <div class="med-name-big">Adolonta · Tramadol</div>
+        <div class="med-note">Registra cada toma con dosis. Máximo recomendado: 400 mg/día.</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:0.65rem;color:var(--ink4);letter-spacing:0.08em;text-transform:uppercase">Total hoy</div>
+        <div style="font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--forest)" id="med-total-today">0 mg</div>
+      </div>
+    </div>
+
+    <div style="font-size:0.72rem;color:var(--ink4);margin-bottom:8px;letter-spacing:0.06em;text-transform:uppercase">Dosis a registrar</div>
+    <div class="mg-selector" id="mg-selector">
+      <div class="mg-btn" onclick="selMg(50)">50 mg</div>
+      <div class="mg-btn" onclick="selMg(100)">100 mg</div>
+      <div class="mg-btn" onclick="selMg(150)">150 mg</div>
+      <div class="mg-btn" onclick="selMg(200)">200 mg</div>
+    </div>
+
+    <div class="take-row">
+      <button class="btn btn-forest btn-sm" onclick="takeMed()">Registrar toma</button>
+      <span style="font-size:0.72rem;color:var(--ink4)">o ajusta la hora:</span>
+      <input type="time" id="med-time-override" class="field" style="width:110px;padding:6px 10px;font-size:0.82rem;">
+    </div>
+
+    <div style="height:1px;background:var(--cream2);margin:16px 0"></div>
+
+    <div style="font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:8px">Registro de hoy</div>
+    <div class="med-log" id="med-log">
+      <div class="med-empty">Sin tomas registradas hoy.</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:12px">
+    <div style="font-size:0.72rem;color:var(--ink3);line-height:1.6">
+      <strong style="color:var(--forest)">Recuerda:</strong> El Tramadol es un opioide. Tómalo según indicación médica.
+      Si sientes que el dolor no mejora, consulta a tu médico antes de aumentar la dosis.
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════ CICLO ═══════════ -->
+<div id="page-ciclo" class="page">
+
+  <div class="slabel mb16">Ciclo Menstrual</div>
+  <div class="card mb16">
+    <div class="cycle-ctrl">
+      <span class="ctrl-lbl">Inicio último período</span>
+      <input type="date" id="cycle-start">
+      <span class="ctrl-lbl">Duración ciclo</span>
+      <input type="number" id="cycle-len" value="28" min="21" max="35">
+      <span class="ctrl-lbl">Días período</span>
+      <input type="number" id="period-len" value="5" min="2" max="8">
+      <button class="btn btn-forest btn-sm" onclick="updateCycle()">Actualizar</button>
+    </div>
+
+    <div class="phase-strip" id="phase-strip">
+      <div class="phase-strip-title" id="phase-title">Configura tu ciclo arriba</div>
+      <div class="phase-strip-desc" id="phase-desc">Ingresa la fecha de tu último período para ver la fase actual y predicciones.</div>
+    </div>
+
+    <div class="cal-head"><div>D</div><div>L</div><div>M</div><div>X</div><div>J</div><div>V</div><div>S</div></div>
+    <div class="cal-grid" id="cycle-cal"></div>
+
+    <div class="cal-legend">
+      <div class="cal-leg"><div class="cal-dot" style="background:rgba(192,57,43,0.5)"></div>Menstruación</div>
+      <div class="cal-leg"><div class="cal-dot" style="background:var(--moss)"></div>Período fértil</div>
+      <div class="cal-leg"><div class="cal-dot" style="background:var(--amber)"></div>Ovulación</div>
+      <div class="cal-leg"><div class="cal-dot" style="background:var(--forest)"></div>Hoy</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:10px">Síntomas de hoy</div>
+    <div class="sym-wrap" id="sym-wrap"></div>
+    <textarea class="field" id="cycle-notes" rows="3" placeholder=""></textarea>
+  </div>
+
+</div>
+
+<!-- ═══════════ TAREAS ═══════════ -->
+<div id="page-tareas" class="page">
+
+  <!-- Universidad -->
+  <div class="slabel mb16">Universidad</div>
+  <div class="card mb24">
+    <div class="task-form">
+      <input class="field field-inline" type="text" id="task-uni-input" placeholder="" onkeydown="if(event.key==='Enter')addTask('uni')">
+      <select class="field" style="width:auto" id="task-uni-cat">
+        <option value="Entrega">Entrega</option>
+        <option value="Examen">Examen</option>
+        <option value="Lectura">Lectura</option>
+        <option value="Apuntes">Apuntes</option>
+        <option value="Otro">Otro</option>
+      </select>
+      <button class="btn btn-forest btn-sm" onclick="addTask('uni')">Añadir</button>
+    </div>
+    <div id="task-list-uni"></div>
+  </div>
+
+  <!-- Casa -->
+  <div class="slabel mb16">Casa</div>
+  <div class="card mb24">
+    <div class="task-form">
+      <input class="field field-inline" type="text" id="task-casa-input" placeholder="" onkeydown="if(event.key==='Enter')addTask('casa')">
+      <select class="field" style="width:auto" id="task-casa-cat">
+        <option value="Limpieza">Limpieza</option>
+        <option value="Compras">Compras</option>
+        <option value="Cocina">Cocina</option>
+        <option value="Gestión">Gestión</option>
+        <option value="Otro">Otro</option>
+      </select>
+      <button class="btn btn-forest btn-sm" onclick="addTask('casa')">Añadir</button>
+    </div>
+    <div id="task-list-casa"></div>
+  </div>
+
+  <!-- Personal -->
+  <div class="slabel mb16">Personal</div>
+  <div class="card">
+    <div class="task-form">
+      <input class="field field-inline" type="text" id="task-per-input" placeholder="" onkeydown="if(event.key==='Enter')addTask('per')">
+      <select class="field" style="width:auto" id="task-per-cat">
+        <option value="Salud">Salud</option>
+        <option value="Social">Social</option>
+        <option value="Cita">Cita</option>
+        <option value="Ocio">Ocio</option>
+        <option value="Otro">Otro</option>
+      </select>
+      <button class="btn btn-forest btn-sm" onclick="addTask('per')">Añadir</button>
+    </div>
+    <div id="task-list-per"></div>
+  </div>
+
+</div>
+
+<!-- ═══════════ LOGROS ═══════════ -->
+<div id="page-logros" class="page">
+
+  <div class="slabel mb16">Estudio</div>
+  <div class="badges-grid mb24" id="badges-estudio"></div>
+
+  <div class="slabel mb16">Bienestar</div>
+  <div class="badges-grid mb24" id="badges-salud"></div>
+
+  <div class="slabel mb16">Constancia</div>
+  <div class="badges-grid mb24" id="badges-constancia"></div>
+
+  <div class="slabel mb16">Especiales</div>
+  <div class="badges-grid mb24" id="badges-especiales"></div>
+
+  <div class="slabel mb16">Estadísticas globales</div>
+  <div class="g4">
+    <div class="mini-card"><div class="mc-label">Hábitos</div><div class="mc-val" id="sg-habits">0</div></div>
+    <div class="mini-card"><div class="mc-label">Horas estudio</div><div class="mc-val" id="sg-pomos">0</div></div>
+    <div class="mini-card"><div class="mc-label">Tomas med.</div><div class="mc-val" id="sg-meds">0</div></div>
+    <div class="mini-card"><div class="mc-label">Tareas</div><div class="mc-val" id="sg-tasks">0</div></div>
+  </div>
+
+</div>
+
+<!-- ═══════════ ASIGNATURAS ═══════════ -->
+<div id="page-asignaturas" class="page">
+
+  <div class="slabel mb16">Asignaturas</div>
+
+  <!-- Add subject form -->
+  <div class="card mb16" id="asig-form-card">
+    <div style="font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--moss);margin-bottom:14px">Añadir asignatura</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div>
+        <div style="font-size:0.62rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px">Nombre</div>
+        <input type="text" id="asig-nombre" class="field">
+      </div>
+      <div>
+        <div style="font-size:0.62rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px">Créditos ECTS</div>
+        <input type="number" id="asig-ects" min="1" max="12" value="6" style="background:var(--cream);border:1px solid var(--cream3);border-radius:6px;color:var(--ink);font-family:'DM Sans',sans-serif;font-size:0.9rem;padding:8px 10px;outline:none;width:100%">
+      </div>
+      <div>
+        <div style="font-size:0.62rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px">Cuatrimestre</div>
+        <select id="asig-cuatri" class="field">
+          <option value="1">1er cuatrimestre</option>
+          <option value="2">2o cuatrimestre</option>
+          <option value="anual">Anual</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:0.62rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px">Tipo evaluación</div>
+        <select id="asig-eval" class="field">
+          <option value="continua">Evaluación continua</option>
+          <option value="final">Examen final</option>
+          <option value="mixta">Mixta</option>
+          <option value="proyecto">Por proyecto</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-bottom:10px">
+      <div style="font-size:0.62rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px">Notas (estructura de evaluación, pesos...)</div>
+      <textarea id="asig-notas" class="field" rows="2"></textarea>
+    </div>
+    <button class="btn btn-forest" onclick="addAsignatura()">Guardar asignatura</button>
+  </div>
+
+  <div id="asig-list"></div>
+
+</div>
+
+<!-- ═══════════ EXÁMENES ═══════════ -->
+<div id="page-examenes" class="page">
+
+  <div class="slabel mb16">Planificación de exámenes</div>
+
+  <div class="card mb16">
+    <div style="font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--moss);margin-bottom:14px">Añadir examen</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div>
+        <div style="font-size:0.62rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px">Asignatura</div>
+        <input type="text" id="exam-asig" class="field" list="asig-datalist">
+        <datalist id="asig-datalist"></datalist>
+      </div>
+      <div>
+        <div style="font-size:0.62rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px">Fecha</div>
+        <input type="date" id="exam-fecha" style="background:var(--cream);border:1px solid var(--cream3);border-radius:6px;color:var(--ink);font-family:'DM Sans',sans-serif;font-size:0.9rem;padding:8px 10px;outline:none;width:100%">
+      </div>
+      <div>
+        <div style="font-size:0.62rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px">Hora</div>
+        <input type="time" id="exam-hora" style="background:var(--cream);border:1px solid var(--cream3);border-radius:6px;color:var(--ink);font-family:'DM Sans',sans-serif;font-size:0.9rem;padding:8px 10px;outline:none;width:100%">
+      </div>
+      <div>
+        <div style="font-size:0.62rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px">Tipo</div>
+        <select id="exam-tipo" class="field">
+          <option value="Parcial">Parcial</option>
+          <option value="Final">Final</option>
+          <option value="Práctica">Práctica</option>
+          <option value="Oral">Oral</option>
+          <option value="Entrega">Entrega</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:0.62rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px">Peso en nota (%)</div>
+        <input type="number" id="exam-peso" min="0" max="100" value="50" style="background:var(--cream);border:1px solid var(--cream3);border-radius:6px;color:var(--ink);font-family:'DM Sans',sans-serif;font-size:0.9rem;padding:8px 10px;outline:none;width:100%">
+      </div>
+      <div>
+        <div style="font-size:0.62rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px">Nota obtenida (opcional)</div>
+        <input type="number" id="exam-nota" min="0" max="10" step="0.1" style="background:var(--cream);border:1px solid var(--cream3);border-radius:6px;color:var(--ink);font-family:'DM Sans',sans-serif;font-size:0.9rem;padding:8px 10px;outline:none;width:100%">
+      </div>
+    </div>
+    <div style="margin-bottom:10px">
+      <div style="font-size:0.62rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px">Temas / notas</div>
+      <textarea id="exam-temas" class="field" rows="2"></textarea>
+    </div>
+    <button class="btn btn-forest" onclick="addExamen()">Guardar examen</button>
+  </div>
+
+  <!-- Próximos -->
+  <div class="slabel mb16">Próximos</div>
+  <div id="exam-proximos" class="mb24"></div>
+
+  <!-- Pasados -->
+  <div class="slabel mb16">Realizados</div>
+  <div id="exam-pasados"></div>
+
+</div>
+
+<!-- ═══════════ PROYECTOS ═══════════ -->
+<div id="page-proyectos" class="page">
+
+  <div class="slabel mb16">Prácticas y Proyectos</div>
+
+  <div class="card mb16">
+    <div style="font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--moss);margin-bottom:14px">Añadir proyecto / práctica</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div>
+        <div style="font-size:0.62rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px">Nombre</div>
+        <input type="text" id="proy-nombre" class="field">
+      </div>
+      <div>
+        <div style="font-size:0.62rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px">Asignatura</div>
+        <input type="text" id="proy-asig" class="field" list="asig-datalist">
+      </div>
+      <div>
+        <div style="font-size:0.62rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px">Entrega</div>
+        <input type="date" id="proy-fecha" style="background:var(--cream);border:1px solid var(--cream3);border-radius:6px;color:var(--ink);font-family:'DM Sans',sans-serif;font-size:0.9rem;padding:8px 10px;outline:none;width:100%">
+      </div>
+      <div>
+        <div style="font-size:0.62rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px">Tipo</div>
+        <select id="proy-tipo" class="field">
+          <option value="Práctica lab">Práctica lab</option>
+          <option value="Proyecto grupo">Proyecto grupo</option>
+          <option value="Proyecto individual">Proyecto individual</option>
+          <option value="Memoria">Memoria</option>
+          <option value="Presentación">Presentación</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:0.62rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px">Peso en nota (%)</div>
+        <input type="number" id="proy-peso" min="0" max="100" value="20" style="background:var(--cream);border:1px solid var(--cream3);border-radius:6px;color:var(--ink);font-family:'DM Sans',sans-serif;font-size:0.9rem;padding:8px 10px;outline:none;width:100%">
+      </div>
+      <div>
+        <div style="font-size:0.62rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px">Estado</div>
+        <select id="proy-estado" class="field">
+          <option value="Sin empezar">Sin empezar</option>
+          <option value="En progreso">En progreso</option>
+          <option value="Entregado">Entregado</option>
+          <option value="Calificado">Calificado</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-bottom:10px">
+      <div style="font-size:0.62rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px">Descripción / objetivos</div>
+      <textarea id="proy-desc" class="field" rows="2"></textarea>
+    </div>
+    <button class="btn btn-forest" onclick="addProyecto()">Guardar proyecto</button>
+  </div>
+
+  <div id="proy-list"></div>
+
+</div>
+
+</main>
+
+<div id="toast"><div id="toast-msg"></div></div>
+
+<script>
+// ─────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────
+let S = JSON.parse(localStorage.getItem('musgo_v1') || 'null') || {
+  xp:0, level:1, hp:100, streak:0, lastDate:'',
+  totalHabits:0, totalStudyHours:0, totalMedTakes:0, totalTasks:0,
+  water:0, habits:{}, medLog:[], studySessions:[],
+  tasks:{uni:[], casa:[], per:[]},
+  notas:'', cycleStart:'', cycleLen:28, periodLen:5,
+  cycleSymptoms:{}, cycleNotes:{}, earnedBadges:[],
+  asignaturas:[], examenes:[], proyectos:[]
+};
+
+const XP_TABLE = [100,200,350,550,800,1100,1500,2000,2600,3300];
+const xpNeeded = l => XP_TABLE[Math.min(l-1,9)]||3300;
+const CLASSES = [
+  {min:1,'name':'Estudiante Novata'},
+  {min:3,'name':'Aprendiz Dedicada'},
+  {min:5,'name':'Buscadora del Saber'},
+  {min:8,'name':'Maga del Conocimiento'},
+  {min:12,'name':'Gran Maestra'},
+];
+const getClass = l => { let c=CLASSES[0]; CLASSES.forEach(x=>{ if(l>=x.min) c=x; }); return c; };
+
+// ─────────────────────────────────────────
+// HABITS
+// ─────────────────────────────────────────
+const H_EST = [
+  {id:'horas',   name:'Estudiar al menos 1 hora',     xp:20},
+  {id:'apuntes', name:'Repasar apuntes del día',       xp:15},
+  {id:'entrega', name:'Avanzar en entregas / tareas',  xp:20},
+  {id:'ejerc',   name:'Hacer ejercicios prácticos',    xp:15},
+  {id:'lectura', name:'Leer bibliografía',             xp:12},
+];
+const H_SAL = [
+  {id:'medita',  name:'Meditación (10 min)',           xp:15},
+  {id:'desayuno',name:'Desayunar bien',                xp:10},
+  {id:'salir',   name:'Salir al exterior',             xp:10},
+  {id:'estir_d', name:'Estiramientos articulares',     xp:12},
+  {id:'hidra',   name:'Beber agua regularmente',       xp:8 },
+];
+const H_NOC = [
+  {id:'estir_n', name:'Estiramientos nocturnos',       xp:12},
+  {id:'nopant',  name:'Sin pantallas 30 min antes',    xp:10},
+  {id:'diario',  name:'Escribir en el diario',         xp:10},
+  {id:'dormir',  name:'Dormir a tiempo',               xp:15},
+];
+
+// ─────────────────────────────────────────
+// SAVE
+// ─────────────────────────────────────────
+const save = () => localStorage.setItem('musgo_v1', JSON.stringify(S));
+
+// ─────────────────────────────────────────
+// DATE
+// ─────────────────────────────────────────
+function setHeaderDate() {
+  const d = new Date();
+  const days = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const months = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  document.getElementById('header-date').textContent =
+    `${days[d.getDay()]}, ${d.getDate()} de ${months[d.getMonth()]} de ${d.getFullYear()}`;
+}
+
+function checkDay() {
+  const today = new Date().toDateString();
+  if(S.lastDate !== today) {
+    if(S.lastDate) {
+      const yest = new Date(); yest.setDate(yest.getDate()-1);
+      S.streak = (S.lastDate===yest.toDateString()) ? S.streak+1 : 0;
+      if(S.lastDate!==yest.toDateString()) S.hp = Math.max(40, S.hp-10);
+    }
+    S.habits = {}; S.water = 0;
+    S.studySessions = (S.studySessions||[]).filter(e=>e.date===today);
+    S.medLog = S.medLog || [];
+    // keep medLog but reset daily — tag with date
+    S.medLog = S.medLog.filter(e=>e.date===today);
+    S.lastDate = today;
+    save();
+  }
+}
+
+// ─────────────────────────────────────────
+// XP / LEVEL
+// ─────────────────────────────────────────
+function gainXP(amt) {
+  S.xp += amt; S.totalHabits++;
+  while(S.xp >= xpNeeded(S.level) && S.level < 15) {
+    S.xp -= xpNeeded(S.level); S.level++;
+    showToast(`Subiste al nivel ${S.level} — ${getClass(S.level).name}`);
+  }
+  save(); updateUI(); checkBadges(); floatXP(amt);
+}
+
+function floatXP(amt) {
+  const el = document.createElement('div');
+  el.className = 'xpf';
+  el.textContent = `+${amt} xp`;
+  el.style.left = (100+Math.random()*200)+'px';
+  el.style.top  = '120px';
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), 1400);
+}
+
+// ─────────────────────────────────────────
+// TOAST
+// ─────────────────────────────────────────
+let tTimer;
+function showToast(msg, xp=null) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').innerHTML = msg + (xp?`<div class="toast-xp">+${xp} xp</div>`:'');
+  t.classList.add('show');
+  clearTimeout(tTimer);
+  tTimer = setTimeout(()=>t.classList.remove('show'), 3200);
+}
+
+// ─────────────────────────────────────────
+// HABITS RENDER
+// ─────────────────────────────────────────
+const checkSVG = `<svg viewBox="0 0 12 10" fill="none"><polyline points="1,5 4.5,9 11,1" stroke="${'#faf7f2'}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+function renderHabits(list, id) {
+  const el = document.getElementById(id); if(!el) return;
+  el.innerHTML = '';
+  list.forEach(h => {
+    const done = S.habits[h.id]?.done;
+    const str  = S.habits[h.id]?.streak||0;
+    const row  = document.createElement('div');
+    row.className = 'habit-row'+(done?' done':'');
+    row.innerHTML = `
+      <div class="h-check">${done?checkSVG:''}</div>
+      <span class="h-name">${h.name}</span>
+      <span class="h-xp">+${h.xp} xp</span>
+      ${str>1?`<span class="h-streak">${str}d</span>`:''}
+    `;
+    row.onclick = ()=>{
+      if(done) return;
+      S.habits[h.id] = {done:true, streak:(S.habits[h.id]?.streak||0)+1};
+      gainXP(h.xp);
+      showToast(`"${h.name}" completado`, h.xp);
+      renderAllHabits();
+    };
+    el.appendChild(row);
+  });
+}
+
+function renderAllHabits() {
+  renderHabits(H_EST,'h-est-prev'); renderHabits(H_EST,'h-est-full');
+  renderHabits(H_SAL,'h-sal-prev'); renderHabits(H_SAL,'h-sal-full');
+  renderHabits(H_NOC,'h-noc-full');
+}
+
+// ─────────────────────────────────────────
+// WATER
+// ─────────────────────────────────────────
+function renderWater() {
+  const el = document.getElementById('water-dots'); if(!el) return;
+  el.innerHTML = '';
+  for(let i=0;i<8;i++){
+    const d = document.createElement('div');
+    d.className = 'wdot'+(S.water>i?' filled':'');
+    d.onclick = ()=>setWater(i+1);
+    el.appendChild(d);
+  }
+  const pct = Math.min(100,(S.water/8)*100);
+  const wb = document.getElementById('water-bar'); if(wb) wb.style.width=pct+'%';
+  const wl = document.getElementById('water-lbl'); if(wl) wl.textContent=S.water+' / 8';
+  const wm = document.getElementById('d-water'); if(wm) wm.textContent=S.water;
+}
+
+function setWater(n) {
+  const prev=S.water; S.water=n;
+  if(n===8&&prev<8){ gainXP(20); showToast('¡Meta de hidratación completada!',20); }
+  else if(n>prev) gainXP(2);
+  save(); renderWater();
+}
+
+// ─────────────────────────────────────────
+// MEDICATION
+// ─────────────────────────────────────────
+let selectedMg = 50;
+
+function selMg(mg) {
+  selectedMg = mg;
+  document.querySelectorAll('.mg-btn').forEach(b=>b.classList.remove('sel'));
+  document.querySelectorAll('.mg-btn').forEach(b=>{ if(b.textContent===mg+' mg') b.classList.add('sel'); });
+}
+
+function takeMed() {
+  const today = new Date().toDateString();
+  const override = document.getElementById('med-time-override').value;
+  let timeStr;
+  if(override) {
+    timeStr = override;
+  } else {
+    const now = new Date();
+    timeStr = String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  }
+  S.medLog = S.medLog||[];
+  S.medLog.push({date:today, time:timeStr, mg:selectedMg, id:Date.now()});
+  S.totalMedTakes++;
+  gainXP(8);
+  showToast(`${selectedMg} mg de Adolonta registrados a las ${timeStr}`, 8);
+  save(); renderMedLog(); checkBadges();
+  document.getElementById('med-time-override').value='';
+}
+
+function delMedEntry(id) {
+  S.medLog = S.medLog.filter(e=>e.id!==id);
+  save(); renderMedLog();
+}
+
+function renderMedLog() {
+  const today = new Date().toDateString();
+  const todayLog = (S.medLog||[]).filter(e=>e.date===today);
+  const totalMg = todayLog.reduce((a,e)=>a+e.mg,0);
+  const el = document.getElementById('med-log'); if(!el) return;
+  const tt = document.getElementById('med-total-today'); if(tt) tt.textContent=totalMg+' mg';
+  if(!todayLog.length){
+    el.innerHTML='<div class="med-empty">Sin tomas registradas hoy.</div>';
+    return;
+  }
+  el.innerHTML='';
+  todayLog.sort((a,b)=>a.time.localeCompare(b.time)).forEach(e=>{
+    const row=document.createElement('div');
+    row.className='med-entry';
+    row.innerHTML=`
+      <span class="med-entry-time">${e.time}</span>
+      <span class="med-entry-mg">${e.mg} mg</span>
+      <button class="med-entry-del" onclick="delMedEntry(${e.id})">eliminar</button>
+    `;
+    el.appendChild(row);
+  });
+}
+
+// ─────────────────────────────────────────
+// POMODORO
+// ─────────────────────────────────────────
+// ─────────────────────────────────────────
+// STUDY SESSIONS
+// ─────────────────────────────────────────
+// ─────────────────────────────────────────
+// STUDY SESSIONS
+// ─────────────────────────────────────────
+let studyMode = 'range';
+
+function setStudyMode(mode){
+  studyMode = mode;
+  document.getElementById('study-mode-range').style.display = mode==='range' ? 'block' : 'none';
+  document.getElementById('study-mode-dur').style.display   = mode==='dur'   ? 'block' : 'none';
+  const rb = document.getElementById('mode-range-btn');
+  const db = document.getElementById('mode-dur-btn');
+  if(rb){ rb.style.background=mode==='range'?'var(--forest)':''; rb.style.borderColor=mode==='range'?'var(--forest)':'var(--cream3)'; rb.style.color=mode==='range'?'var(--cream)':''; }
+  if(db){ db.style.background=mode==='dur'?'var(--forest)':''; db.style.borderColor=mode==='dur'?'var(--forest)':'var(--cream3)'; db.style.color=mode==='dur'?'var(--cream)':''; }
+}
+
+function addStudySession(){
+  const label = (document.getElementById('study-label').value||'').trim();
+  const today = new Date().toDateString();
+  let mins = 0, fromStr = '', toStr = '';
+
+  if(studyMode === 'range'){
+    fromStr = document.getElementById('study-from').value;
+    toStr   = document.getElementById('study-to').value;
+    if(!fromStr || !toStr){ showToast('Indica la hora de inicio y fin.'); return; }
+    const [fh,fm] = fromStr.split(':').map(Number);
+    const [th,tm] = toStr.split(':').map(Number);
+    mins = (th*60+tm) - (fh*60+fm);
+    if(mins <= 0){ showToast('La hora de fin debe ser posterior al inicio.'); return; }
+  } else {
+    const h = parseInt(document.getElementById('study-dur-h').value)||0;
+    const m = parseInt(document.getElementById('study-dur-m').value)||0;
+    mins = h*60 + m;
+    if(mins <= 0){ showToast('Introduce una duración mayor que cero.'); return; }
+    fromStr = '—';
+    toStr   = `${h}h ${m}min`;
+  }
+
+  if(!S.studySessions) S.studySessions = [];
+  S.studySessions.push({id:Date.now(), date:today, from:fromStr, to:toStr, mins, label});
+
+  const xpGained = Math.min(40, Math.max(5, Math.floor(mins/10)*3));
+  gainXP(xpGained);
+  showToast(`Sesión registrada: ${Math.floor(mins/60)}h ${mins%60}min`, xpGained);
+
+  // clear fields
+  const sf = document.getElementById('study-from'); if(sf) sf.value='';
+  const st = document.getElementById('study-to');   if(st) st.value='';
+  const sl = document.getElementById('study-label'); if(sl) sl.value='';
+  const dh = document.getElementById('study-dur-h'); if(dh) dh.value='0';
+  const dm = document.getElementById('study-dur-m'); if(dm) dm.value='0';
+
+  save(); renderStudyLog(); updateStudyDash();
+}
+
+function delStudySession(id){
+  S.studySessions = (S.studySessions||[]).filter(e=>e.id!==id);
+  save(); renderStudyLog(); updateStudyDash();
+}
+
+function renderStudyLog(){
+  const today   = new Date().toDateString();
+  const sessions = (S.studySessions||[]).filter(e=>e.date===today);
+  const el = document.getElementById('study-log'); if(!el) return;
+  if(!sessions.length){
+    el.innerHTML='<div style="font-size:0.8rem;color:var(--ink4);font-style:italic;padding:6px 0">Sin sesiones registradas hoy.</div>';
+    return;
+  }
+  el.innerHTML='';
+  [...sessions].reverse().forEach(s=>{
+    const row = document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--cream2);flex-wrap:wrap';
+    row.innerHTML=`
+      <span style="font-size:0.75rem;color:var(--ink4);white-space:nowrap;min-width:110px">${s.from!=='—'?s.from+' – '+s.to:''}</span>
+      <span style="flex:1;font-size:0.88rem;color:var(--ink2)">${s.label||'—'}</span>
+      <span style="font-size:0.82rem;color:var(--moss);font-weight:500;white-space:nowrap">${Math.floor(s.mins/60)}h ${s.mins%60}min</span>
+      <button onclick="delStudySession(${s.id})" style="background:none;border:none;color:var(--ink4);cursor:pointer;font-size:0.75rem;padding:2px 6px;border-radius:4px;transition:color 0.15s" onmouseover="this.style.color='var(--red-soft)'" onmouseout="this.style.color='var(--ink4)'">×</button>
+    `;
+    el.appendChild(row);
+  });
+}
+
+function updateStudyDash(){
+  const today    = new Date().toDateString();
+  const sessions = (S.studySessions||[]).filter(e=>e.date===today);
+  const totalMins = sessions.reduce((a,s)=>a+s.mins, 0);
+  const h = Math.floor(totalMins/60), m = totalMins%60;
+  const td = document.getElementById('study-total-disp'); if(td) td.textContent=`${h} h ${m} min`;
+  const dd = document.getElementById('d-study');          if(dd) dd.textContent=`${h}h ${m}m`;
+  const ds = document.getElementById('d-study-sessions'); if(ds) ds.textContent=sessions.length+(sessions.length===1?' sesión':' sesiones');
+  const allMins = (S.studySessions||[]).reduce((a,s)=>a+s.mins,0);
+  S.totalStudyHours = Math.floor(allMins/60);
+  const sp = document.getElementById('sg-pomos'); if(sp) sp.textContent=S.totalStudyHours||0;
+}
+
+// ─────────────────────────────────────────
+// CYCLE
+// ─────────────────────────────────────────
+function updateCycle(){
+  const v=document.getElementById('cycle-start').value;
+  if(!v){ showToast('Ingresa la fecha de inicio del período.'); return; }
+  S.cycleStart=v;
+  S.cycleLen=parseInt(document.getElementById('cycle-len').value)||28;
+  S.periodLen=parseInt(document.getElementById('period-len').value)||5;
+  save(); renderCycle();
+}
+
+function renderCycle(){
+  if(!S.cycleStart) return;
+  const start=new Date(S.cycleStart+'T12:00:00');
+  const today=new Date(); today.setHours(12,0,0,0);
+  const cL=S.cycleLen, pL=S.periodLen;
+  const ovD=cL-14, fS=ovD-5, fE=ovD+1;
+  const diff=Math.floor((today-start)/86400000);
+  const curD=((diff%cL)+cL)%cL+1;
+
+  let ptitle,pdesc;
+  if(curD<=pL){
+    ptitle=`Menstruación — día ${curD}`;
+    pdesc='Cuídate especialmente. El dolor articular puede intensificarse durante la menstruación. Recuerda el Tramadol según indicación si el dolor aumenta.';
+  } else if(curD<fS){
+    ptitle=`Fase folicular — día ${curD}`;
+    pdesc='La energía irá aumentando progresivamente. Buen momento para retomar hábitos de estudio intensivos.';
+  } else if(curD===ovD){
+    ptitle=`Ovulación — día ${curD}`;
+    pdesc='Pico de energía y concentración. Aprovecha para las tareas más exigentes.';
+  } else if(curD>=fS&&curD<=fE){
+    ptitle=`Ventana fértil — día ${curD}`;
+    pdesc='Energía y comunicación elevadas. Buen momento para trabajo colaborativo y presentaciones.';
+  } else {
+    ptitle=`Fase lútea — día ${curD}`;
+    pdesc='Puede aparecer tensión premenstrual. Prioriza el descanso, los estiramientos y la hidratación.';
+  }
+  document.getElementById('phase-title').textContent=ptitle;
+  document.getElementById('phase-desc').textContent=pdesc;
+
+  const cal=document.getElementById('cycle-cal'); cal.innerHTML='';
+  const calS=new Date(start); calS.setDate(calS.getDate()-calS.getDay());
+  for(let i=0;i<35;i++){
+    const d=new Date(calS); d.setDate(d.getDate()+i);
+    const df=Math.floor((d-start)/86400000);
+    const dc=((df%cL)+cL)%cL+1;
+    const cell=document.createElement('div');
+    cell.className='cday';
+    cell.textContent=d.getDate();
+    const isToday=d.toDateString()===today.toDateString();
+    if(isToday) cell.classList.add('today');
+    else if(dc>=1&&dc<=pL) cell.classList.add('period');
+    else if(dc===ovD) cell.classList.add('ovulation');
+    else if(dc>=fS&&dc<=fE) cell.classList.add('fertile');
+    cal.appendChild(cell);
+  }
+}
+
+const SYMPTOMS=['Cólicos','Cansancio','Irritabilidad','Náuseas','Hinchazón','Dolor de cabeza','Ansiedad','Con energía','Productiva','Dolor articular','Sensibilidad','Insomnio'];
+
+function renderSymptoms(){
+  const el=document.getElementById('sym-wrap'); if(!el) return;
+  const td=new Date().toDateString();
+  const sel=S.cycleSymptoms[td]||[];
+  el.innerHTML='';
+  SYMPTOMS.forEach(s=>{
+    const btn=document.createElement('span');
+    btn.className='sym-tag'+(sel.includes(s)?' active':'');
+    btn.textContent=s;
+    btn.onclick=()=>{
+      const i=sel.indexOf(s);
+      if(i>=0)sel.splice(i,1); else sel.push(s);
+      S.cycleSymptoms[td]=sel; save(); renderSymptoms();
+    };
+    el.appendChild(btn);
+  });
+}
+
+// ─────────────────────────────────────────
+// TASKS
+// ─────────────────────────────────────────
+function addTask(section){
+  const inp=document.getElementById(`task-${section}-input`);
+  const cat=document.getElementById(`task-${section}-cat`).value;
+  const txt=inp.value.trim(); if(!txt) return;
+  if(!S.tasks[section]) S.tasks[section]=[];
+  S.tasks[section].unshift({id:Date.now(),text:txt,cat,done:false});
+  inp.value=''; save(); renderTasks(section);
+}
+
+function toggleTask(section,id){
+  const t=S.tasks[section].find(x=>x.id===id); if(!t) return;
+  t.done=!t.done;
+  if(t.done){ S.totalTasks++; gainXP(5); showToast('Tarea completada.',5); }
+  save(); renderTasks(section); updateStats();
+}
+
+function delTask(section,id){
+  S.tasks[section]=S.tasks[section].filter(x=>x.id!==id);
+  save(); renderTasks(section);
+}
+
+function renderTasks(section){
+  const el=document.getElementById(`task-list-${section}`); if(!el) return;
+  const list=S.tasks[section]||[];
+  if(!list.length){
+    el.innerHTML='<div style="font-size:0.8rem;color:var(--ink4);padding:10px 0;font-style:italic">Sin tareas pendientes.</div>';
+    return;
+  }
+  el.innerHTML='';
+  list.forEach(t=>{
+    const row=document.createElement('div');
+    row.className='task-row'+(t.done?' done-t':'');
+    row.innerHTML=`
+      <div class="t-check" onclick="toggleTask('${section}',${t.id})">${t.done?checkSVG.replace('#faf7f2','#faf7f2'):''}</div>
+      <span class="task-cat-tag">${t.cat}</span>
+      <span class="task-text">${t.text}</span>
+      <button class="btn btn-danger btn-sm" onclick="delTask('${section}',${t.id})">×</button>
+    `;
+    el.appendChild(row);
+  });
+}
+
+// ─────────────────────────────────────────
+// BADGES
+// ─────────────────────────────────────────
+// SVG icons (no emoji)
+const ICONS = {
+  leaf:   `<svg viewBox="0 0 16 16" fill="none"><path d="M2 14c0 0 2-8 12-10C14 14 6 16 2 14z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><line x1="2" y1="14" x2="9" y2="7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`,
+  star:   `<svg viewBox="0 0 16 16" fill="none"><polygon points="8,1 10,6 15,6 11,10 13,15 8,12 3,15 5,10 1,6 6,6" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>`,
+  fire:   `<svg viewBox="0 0 16 16" fill="none"><path d="M8 14c-3 0-5-2-5-5 0-4 3-6 4-8 1 2 4 3 4 6 0 1-1 2-2 2 0-1 0-3-1-4-1 2-1 4 0 5 2 0 3-1 3-3 0 3-1 7-3 7z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>`,
+  book:   `<svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="10" height="12" rx="1" stroke="currentColor" stroke-width="1.2"/><line x1="5" y1="2" x2="5" y2="14" stroke="currentColor" stroke-width="1.2"/><line x1="7" y1="5" x2="11" y2="5" stroke="currentColor" stroke-width="1.2"/><line x1="7" y1="8" x2="11" y2="8" stroke="currentColor" stroke-width="1.2"/></svg>`,
+  drop:   `<svg viewBox="0 0 16 16" fill="none"><path d="M8 2L4 9a4 4 0 0 0 8 0L8 2z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>`,
+  moon:   `<svg viewBox="0 0 16 16" fill="none"><path d="M12 11A6 6 0 0 1 5 4a6 6 0 1 0 7 7z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>`,
+  check:  `<svg viewBox="0 0 16 16" fill="none"><polyline points="2,8 6,13 14,3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  clock:  `<svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.2"/><polyline points="8,4 8,8 11,10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`,
+  heart:  `<svg viewBox="0 0 16 16" fill="none"><path d="M8 13s-6-4-6-8a4 4 0 0 1 6-3.5A4 4 0 0 1 14 5c0 4-6 8-6 8z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>`,
+  crown:  `<svg viewBox="0 0 16 16" fill="none"><polyline points="1,12 3,5 8,9 11,3 13,5 15,12" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><line x1="1" y1="12" x2="15" y2="12" stroke="currentColor" stroke-width="1.2"/></svg>`,
+  sun:    `<svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.2"/><line x1="8" y1="1" x2="8" y2="3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="8" y1="13" x2="8" y2="15" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="1" y1="8" x2="3" y2="8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="13" y1="8" x2="15" y2="8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="3" y1="3" x2="4.5" y2="4.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="11.5" y1="11.5" x2="13" y2="13" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="13" y1="3" x2="11.5" y2="4.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="4.5" y1="11.5" x2="3" y2="13" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`,
+  seed:   `<svg viewBox="0 0 16 16" fill="none"><ellipse cx="8" cy="9" rx="4" ry="5" stroke="currentColor" stroke-width="1.2"/><line x1="8" y1="4" x2="8" y2="1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`,
+  tree:   `<svg viewBox="0 0 16 16" fill="none"><polygon points="8,2 2,10 14,10" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><polygon points="8,6 3,13 13,13" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><line x1="8" y1="13" x2="8" y2="15" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`,
+  bolt:   `<svg viewBox="0 0 16 16" fill="none"><polyline points="10,1 5,9 9,9 6,15 12,6 8,6 10,1" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>`,
+  pill:   `<svg viewBox="0 0 16 16" fill="none"><rect x="2" y="6" width="12" height="4" rx="2" stroke="currentColor" stroke-width="1.2"/><line x1="8" y1="6" x2="8" y2="10" stroke="currentColor" stroke-width="1.2"/></svg>`,
+};
+
+const BADGES_DEF = {
+  estudio: [
+    {id:'est_1',    name:'Primera hora',    icon:'book', check:()=>S.totalHabits>=1},
+    {id:'est_study1',  name:'1ª sesión',       icon:'clock',check:()=>(S.studySessions||[]).length>=1},
+    {id:'est_study5h', name:'5 horas',         icon:'clock',check:()=>(S.totalStudyHours||0)>=5},
+    {id:'est_study20h',name:'20 horas',        icon:'clock',check:()=>(S.totalStudyHours||0)>=20},
+    {id:'est_study50h',name:'50 horas',        icon:'clock',check:()=>(S.totalStudyHours||0)>=50},
+    {id:'est_hab10', name:'10 hábitos',     icon:'check',check:()=>S.totalHabits>=10},
+    {id:'est_hab50', name:'50 hábitos',     icon:'star', check:()=>S.totalHabits>=50},
+    {id:'est_hab200',name:'200 hábitos',    icon:'crown',check:()=>S.totalHabits>=200},
+    {id:'est_tarea10',name:'10 tareas',     icon:'book', check:()=>S.totalTasks>=10},
+    {id:'est_tarea50',name:'50 tareas',     icon:'star', check:()=>S.totalTasks>=50},
+  ],
+  salud: [
+    {id:'sal_agua1', name:'Hidratada',      icon:'drop', check:()=>S.water>=8},
+    {id:'sal_agua7', name:'7 días de agua', icon:'drop', check:()=>S.earnedBadges.filter(x=>x==='sal_agua1').length>0&&S.streak>=7},
+    {id:'sal_noc1',  name:'Rutina nocturna',icon:'moon', check:()=>S.habits['estir_n']?.done&&S.habits['dormir']?.done},
+    {id:'sal_med10', name:'10 tomas',       icon:'pill', check:()=>S.totalMedTakes>=10},
+    {id:'sal_med30', name:'30 tomas',       icon:'pill', check:()=>S.totalMedTakes>=30},
+    {id:'sal_estir', name:'Estiramientos',  icon:'sun',  check:()=>S.habits['estir_d']?.done&&S.habits['estir_n']?.done},
+    {id:'sal_medita',name:'Meditación',     icon:'moon', check:()=>S.habits['medita']?.done},
+    {id:'sal_full',  name:'Día completo',   icon:'heart',check:()=>H_SAL.every(h=>S.habits[h.id]?.done)},
+  ],
+  constancia: [
+    {id:'con_3',   name:'3 días',           icon:'leaf', check:()=>S.streak>=3},
+    {id:'con_7',   name:'1 semana',         icon:'leaf', check:()=>S.streak>=7},
+    {id:'con_14',  name:'2 semanas',        icon:'tree', check:()=>S.streak>=14},
+    {id:'con_30',  name:'1 mes',            icon:'tree', check:()=>S.streak>=30},
+    {id:'con_60',  name:'2 meses',          icon:'tree', check:()=>S.streak>=60},
+    {id:'con_100', name:'100 días',         icon:'crown',check:()=>S.streak>=100},
+    {id:'con_lvl3',name:'Nivel 3',          icon:'bolt', check:()=>S.level>=3},
+    {id:'con_lvl5',name:'Nivel 5',          icon:'bolt', check:()=>S.level>=5},
+    {id:'con_lvl10',name:'Nivel 10',        icon:'star', check:()=>S.level>=10},
+  ],
+  especiales: [
+    {id:'esp_all_est',name:'Estudio perfecto',icon:'star',check:()=>H_EST.every(h=>S.habits[h.id]?.done)},
+    {id:'esp_all_sal',name:'Bienestar pleno', icon:'heart',check:()=>H_SAL.concat(H_NOC).every(h=>S.habits[h.id]?.done)},
+    {id:'esp_all_day',name:'Día completo',    icon:'crown',check:()=>[...H_EST,...H_SAL,...H_NOC].every(h=>S.habits[h.id]?.done)},
+    {id:'esp_seed',   name:'Semilla',         icon:'seed', check:()=>S.level>=1&&S.streak>=1},
+    {id:'esp_brote',  name:'Brote',           icon:'leaf', check:()=>S.level>=5&&S.streak>=7},
+    {id:'esp_bosque', name:'Bosque',          icon:'tree', check:()=>S.level>=10&&S.streak>=30},
+    {id:'esp_agua_h', name:'Gran hidratación',icon:'drop', check:()=>S.water>=8&&S.streak>=7},
+  ],
+};
+
+function checkBadges(){
+  let got=false;
+  Object.values(BADGES_DEF).flat().forEach(b=>{
+    if(!S.earnedBadges.includes(b.id)&&b.check()){
+      S.earnedBadges.push(b.id); got=true;
+      showToast(`Logro desbloqueado: ${b.name}`);
+    }
+  });
+  if(got){ save(); renderBadges(); }
+}
+
+function renderBadges(){
+  ['estudio','salud','constancia','especiales'].forEach(cat=>{
+    const el=document.getElementById(`badges-${cat}`); if(!el) return;
+    el.innerHTML='';
+    BADGES_DEF[cat].forEach(b=>{
+      const earned=S.earnedBadges.includes(b.id);
+      const div=document.createElement('div');
+      div.className='badge-card '+(earned?'earned':'locked');
+      div.title=b.name;
+      div.innerHTML=`
+        <div class="badge-icon-wrap" style="color:${earned?'var(--forest)':'var(--ink4)'}">${ICONS[b.icon]||''}</div>
+        <div class="badge-name">${b.name}</div>
+      `;
+      el.appendChild(div);
+    });
+  });
+}
+
+// ─────────────────────────────────────────
+// STATS
+// ─────────────────────────────────────────
+function updateStats(){
+  const map={
+    'sg-habits':S.totalHabits,
+    'sg-pomos':S.totalStudyHours||0,
+    'sg-meds':S.totalMedTakes,
+    'sg-tasks':S.totalTasks,
+    'd-streak':S.streak,
+    'd-water':S.water,
+  };
+  Object.entries(map).forEach(([id,val])=>{ const el=document.getElementById(id); if(el) el.textContent=val||0; });
+}
+
+// ─────────────────────────────────────────
+// UPDATE UI
+// ─────────────────────────────────────────
+function updateUI(){
+  const need=xpNeeded(S.level);
+  const pct=Math.min(100,(S.xp/need)*100);
+  const xb=document.getElementById('xp-bar'); if(xb) xb.style.width=pct+'%';
+  const xt=document.getElementById('xp-text'); if(xt) xt.textContent=`${S.xp} / ${need}`;
+  const hb=document.getElementById('hp-bar'); if(hb) hb.style.width=S.hp+'%';
+  const ht=document.getElementById('hp-text'); if(ht) ht.textContent=`${S.hp} / 100`;
+  const cc=document.getElementById('c-class'); if(cc) cc.textContent=getClass(S.level).name;
+  const cl=document.getElementById('c-level'); if(cl) cl.textContent=S.level;
+  ['h-xp','h-lvl','h-str','h-hp'].forEach((id,i)=>{
+    const el=document.getElementById(id); if(!el) return;
+    el.textContent=[S.xp,S.level,S.streak,S.hp][i];
+  });
+  updateStats(); updateStudyDash();
+}
+
+// ─────────────────────────────────────────
+// PAGE NAV
+// ─────────────────────────────────────────
+const PAGE_LABELS = {inicio:'Inicio',estudio:'Estudio',salud:'Salud',medicacion:'Medicación',ciclo:'Ciclo',tareas:'Tareas',asignaturas:'Asignaturas',examenes:'Exámenes',proyectos:'Proyectos',logros:'Logros'};
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('.nb').forEach(b=>{ if(b.textContent===PAGE_LABELS[id]) b.classList.add('active'); });
+  if(id==='ciclo'){ renderCycle(); renderSymptoms(); }
+  if(id==='logros'){ renderBadges(); updateStats(); }
+  if(id==='medicacion'){ renderMedLog(); }
+  if(id==='asignaturas'){ renderAsignaturas(); }
+  if(id==='examenes'){ renderExamenes(); updateDatalist(); }
+  if(id==='proyectos'){ renderProyectos(); updateDatalist(); }
+}
+
+// ─────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────
+setHeaderDate();
+checkDay();
+renderAllHabits();
+renderWater();
+renderMedLog();
+renderStudyLog();
+updateStudyDash();
+selMg(50);
+['uni','casa','per'].forEach(s=>renderTasks(s));
+renderAsignaturas();
+renderExamenes();
+renderProyectos();
+updateDatalist();
+renderBadges();
+updateUI();
+checkBadges();
+
+// Autosave textareas
+document.addEventListener('DOMContentLoaded',()=>{
+  const na=document.getElementById('notas-area');
+  if(na){ na.value=S.notas||''; na.addEventListener('input',()=>{ S.notas=na.value; save(); }); }
+  const cn=document.getElementById('cycle-notes');
+  if(cn){
+    const td=new Date().toDateString();
+    cn.value=S.cycleNotes[td]||'';
+    cn.addEventListener('input',()=>{ S.cycleNotes[td]=cn.value; save(); });
+  }
+  if(S.cycleStart){
+    document.getElementById('cycle-start').value=S.cycleStart;
+    document.getElementById('cycle-len').value=S.cycleLen;
+    document.getElementById('period-len').value=S.periodLen;
+    renderCycle();
+  }
+});
+
+// ─────────────────────────────────────────
+// ASIGNATURAS
+// ─────────────────────────────────────────
+function addAsignatura(){
+  const nombre = document.getElementById('asig-nombre').value.trim();
+  if(!nombre){ showToast('Escribe el nombre de la asignatura.'); return; }
+  const asig = {
+    id: Date.now(),
+    nombre,
+    ects:   parseInt(document.getElementById('asig-ects').value)||6,
+    cuatri: document.getElementById('asig-cuatri').value,
+    eval:   document.getElementById('asig-eval').value,
+    notas:  document.getElementById('asig-notas').value.trim(),
+    nota_final: null
+  };
+  S.asignaturas.push(asig);
+  document.getElementById('asig-nombre').value='';
+  document.getElementById('asig-notas').value='';
+  gainXP(5);
+  save(); renderAsignaturas(); updateDatalist();
+  showToast(`"${nombre}" añadida.`);
+}
+
+function editAsignatura(id){
+  const a = S.asignaturas.find(x=>x.id===id); if(!a) return;
+  const nota = prompt(`Nota final de "${a.nombre}" (0-10):`);
+  if(nota===null) return;
+  const n = parseFloat(nota);
+  if(isNaN(n)||n<0||n>10){ showToast('Nota no válida.'); return; }
+  a.nota_final = n;
+  save(); renderAsignaturas();
+}
+
+function delAsignatura(id){
+  if(!confirm('¿Eliminar esta asignatura?')) return;
+  S.asignaturas = S.asignaturas.filter(x=>x.id!==id);
+  save(); renderAsignaturas(); updateDatalist();
+}
+
+function renderAsignaturas(){
+  const el = document.getElementById('asig-list'); if(!el) return;
+  if(!S.asignaturas.length){
+    el.innerHTML='<div style="font-size:0.82rem;color:var(--ink4);font-style:italic;padding:8px 0">Sin asignaturas añadidas.</div>';
+    return;
+  }
+  // group by cuatri
+  const groups = {};
+  S.asignaturas.forEach(a=>{
+    const k = a.cuatri==='anual'?'Anual':`${a.cuatri}er cuatrimestre`;
+    if(!groups[k]) groups[k]=[];
+    groups[k].push(a);
+  });
+  el.innerHTML='';
+  Object.entries(groups).forEach(([g, list])=>{
+    const gEl = document.createElement('div');
+    gEl.innerHTML=`<div class="slabel mb16">${g}</div>`;
+    el.appendChild(gEl);
+    list.forEach(a=>{
+      const notaColor = a.nota_final===null ? 'var(--ink4)' : a.nota_final>=5 ? 'var(--moss)' : 'var(--red-soft)';
+      const card = document.createElement('div');
+      card.className='card mb16';
+      card.style.padding='16px 20px';
+      card.innerHTML=`
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <div style="flex:1">
+            <div style="font-family:'Playfair Display',serif;font-size:1rem;color:var(--ink);margin-bottom:4px">${a.nombre}</div>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px">
+              <span style="font-size:0.7rem;color:var(--ink4)">${a.ects} ECTS</span>
+              <span style="font-size:0.7rem;color:var(--ink4)">${a.eval}</span>
+            </div>
+            ${a.notas?`<div style="font-size:0.78rem;color:var(--ink3);line-height:1.5">${a.notas}</div>`:''}
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+            <div style="font-family:'Playfair Display',serif;font-size:1.6rem;color:${notaColor};line-height:1">
+              ${a.nota_final!==null ? a.nota_final.toFixed(1) : '—'}
+            </div>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-sage btn-sm" onclick="editAsignatura(${a.id})">Nota</button>
+              <button class="btn btn-danger btn-sm" onclick="delAsignatura(${a.id})">×</button>
+            </div>
+          </div>
+        </div>
+      `;
+      el.appendChild(card);
+    });
+  });
+}
+
+// ─────────────────────────────────────────
+// EXÁMENES
+// ─────────────────────────────────────────
+function addExamen(){
+  const asig = document.getElementById('exam-asig').value.trim();
+  const fecha = document.getElementById('exam-fecha').value;
+  if(!asig||!fecha){ showToast('Asignatura y fecha son obligatorias.'); return; }
+  const notaVal = document.getElementById('exam-nota').value;
+  const exam = {
+    id: Date.now(),
+    asig,
+    fecha,
+    hora:  document.getElementById('exam-hora').value,
+    tipo:  document.getElementById('exam-tipo').value,
+    peso:  parseInt(document.getElementById('exam-peso').value)||0,
+    nota:  notaVal!=='' ? parseFloat(notaVal) : null,
+    temas: document.getElementById('exam-temas').value.trim()
+  };
+  S.examenes.push(exam);
+  document.getElementById('exam-asig').value='';
+  document.getElementById('exam-fecha').value='';
+  document.getElementById('exam-hora').value='';
+  document.getElementById('exam-nota').value='';
+  document.getElementById('exam-temas').value='';
+  gainXP(5);
+  save(); renderExamenes();
+  showToast(`Examen de "${asig}" guardado.`);
+}
+
+function setExamNota(id){
+  const e = S.examenes.find(x=>x.id===id); if(!e) return;
+  const nota = prompt(`Nota de "${e.asig} — ${e.tipo}" (0-10):`);
+  if(nota===null) return;
+  const n = parseFloat(nota);
+  if(isNaN(n)||n<0||n>10){ showToast('Nota no válida.'); return; }
+  e.nota=n; save(); renderExamenes();
+}
+
+function delExamen(id){
+  S.examenes=S.examenes.filter(x=>x.id!==id);
+  save(); renderExamenes();
+}
+
+function renderExamenes(){
+  const today = new Date(); today.setHours(0,0,0,0);
+  const upcoming = S.examenes.filter(e=>new Date(e.fecha+'T00:00:00')>=today && e.nota===null)
+    .sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const past = S.examenes.filter(e=>new Date(e.fecha+'T00:00:00')<today || e.nota!==null)
+    .sort((a,b)=>b.fecha.localeCompare(a.fecha));
+
+  function examCard(e){
+    const d = new Date(e.fecha+'T00:00:00');
+    const diff = Math.ceil((d-today)/(1000*60*60*24));
+    const diffStr = diff>0?`en ${diff} día${diff===1?'':'s'}`:(diff===0?'hoy':'—');
+    const notaColor = e.nota===null?'var(--ink4)':e.nota>=5?'var(--moss)':'var(--red-soft)';
+    const card = document.createElement('div');
+    card.className='card mb16';
+    card.style.cssText='padding:14px 18px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap';
+    card.innerHTML=`
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+          <span style="font-family:'Playfair Display',serif;font-size:0.95rem;color:var(--ink)">${e.asig}</span>
+          <span style="font-size:0.65rem;background:var(--cream2);color:var(--ink4);padding:2px 8px;border-radius:10px">${e.tipo}</span>
+          ${e.peso?`<span style="font-size:0.65rem;color:var(--ink4)">${e.peso}%</span>`:''}
+        </div>
+        <div style="font-size:0.78rem;color:var(--ink4);margin-bottom:4px">
+          ${d.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'})}${e.hora?' · '+e.hora:''}
+          ${diff>0?`<span style="color:var(--amber);margin-left:6px">${diffStr}</span>`:''}
+        </div>
+        ${e.temas?`<div style="font-size:0.78rem;color:var(--ink3);line-height:1.5">${e.temas}</div>`:''}
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+        <div style="font-family:'Playfair Display',serif;font-size:1.5rem;color:${notaColor};line-height:1">${e.nota!==null?e.nota.toFixed(1):'—'}</div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-sage btn-sm" onclick="setExamNota(${e.id})">Nota</button>
+          <button class="btn btn-danger btn-sm" onclick="delExamen(${e.id})">×</button>
+        </div>
+      </div>
+    `;
+    return card;
+  }
+
+  const ep = document.getElementById('exam-proximos');
+  const ea = document.getElementById('exam-pasados');
+  if(ep){
+    ep.innerHTML='';
+    if(!upcoming.length) ep.innerHTML='<div style="font-size:0.82rem;color:var(--ink4);font-style:italic;padding:4px 0">Sin exámenes próximos.</div>';
+    else upcoming.forEach(e=>ep.appendChild(examCard(e)));
+  }
+  if(ea){
+    ea.innerHTML='';
+    if(!past.length) ea.innerHTML='<div style="font-size:0.82rem;color:var(--ink4);font-style:italic;padding:4px 0">Sin exámenes realizados.</div>';
+    else past.forEach(e=>ea.appendChild(examCard(e)));
+  }
+}
+
+// ─────────────────────────────────────────
+// PROYECTOS
+// ─────────────────────────────────────────
+const ESTADO_COLOR = {
+  'Sin empezar':'var(--ink4)',
+  'En progreso':'var(--amber)',
+  'Entregado':  'var(--blue-soft)',
+  'Calificado': 'var(--moss)'
+};
+
+function addProyecto(){
+  const nombre = document.getElementById('proy-nombre').value.trim();
+  if(!nombre){ showToast('Escribe el nombre del proyecto.'); return; }
+  const notaVal = '';
+  const proy = {
+    id:     Date.now(),
+    nombre,
+    asig:   document.getElementById('proy-asig').value.trim(),
+    fecha:  document.getElementById('proy-fecha').value,
+    tipo:   document.getElementById('proy-tipo').value,
+    peso:   parseInt(document.getElementById('proy-peso').value)||0,
+    estado: document.getElementById('proy-estado').value,
+    desc:   document.getElementById('proy-desc').value.trim(),
+    nota:   null
+  };
+  S.proyectos.push(proy);
+  document.getElementById('proy-nombre').value='';
+  document.getElementById('proy-asig').value='';
+  document.getElementById('proy-fecha').value='';
+  document.getElementById('proy-desc').value='';
+  gainXP(5);
+  save(); renderProyectos();
+  showToast(`"${nombre}" añadido.`);
+}
+
+function editProyecto(id, field){
+  const p = S.proyectos.find(x=>x.id===id); if(!p) return;
+  if(field==='estado'){
+    const estados=['Sin empezar','En progreso','Entregado','Calificado'];
+    const idx = estados.indexOf(p.estado);
+    p.estado = estados[(idx+1)%estados.length];
+  } else if(field==='nota'){
+    const nota = prompt(`Nota de "${p.nombre}" (0-10):`);
+    if(nota===null) return;
+    const n=parseFloat(nota);
+    if(isNaN(n)||n<0||n>10){ showToast('Nota no válida.'); return; }
+    p.nota=n; p.estado='Calificado';
+  }
+  save(); renderProyectos();
+}
+
+function delProyecto(id){
+  S.proyectos=S.proyectos.filter(x=>x.id!==id);
+  save(); renderProyectos();
+}
+
+function renderProyectos(){
+  const el = document.getElementById('proy-list'); if(!el) return;
+  if(!S.proyectos.length){
+    el.innerHTML='<div style="font-size:0.82rem;color:var(--ink4);font-style:italic;padding:4px 0">Sin proyectos añadidos.</div>';
+    return;
+  }
+  el.innerHTML='';
+  const sorted=[...S.proyectos].sort((a,b)=>{
+    const order={'Sin empezar':0,'En progreso':1,'Entregado':2,'Calificado':3};
+    return (order[a.estado]||0)-(order[b.estado]||0);
+  });
+  sorted.forEach(p=>{
+    const today=new Date(); today.setHours(0,0,0,0);
+    const dueDate=p.fecha?new Date(p.fecha+'T00:00:00'):null;
+    const diff=dueDate?Math.ceil((dueDate-today)/(1000*60*60*24)):null;
+    const notaColor=p.nota===null?'var(--ink4)':p.nota>=5?'var(--moss)':'var(--red-soft)';
+    const card=document.createElement('div');
+    card.className='card mb16';
+    card.style.padding='16px 20px';
+    card.innerHTML=`
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+            <span style="font-family:'Playfair Display',serif;font-size:0.95rem;color:var(--ink)">${p.nombre}</span>
+            <span style="font-size:0.65rem;background:var(--cream2);color:var(--ink4);padding:2px 8px;border-radius:10px">${p.tipo}</span>
+            ${p.asig?`<span style="font-size:0.65rem;color:var(--ink4)">${p.asig}</span>`:''}
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px">
+            <button onclick="editProyecto(${p.id},'estado')" style="font-size:0.68rem;padding:2px 10px;border-radius:20px;border:1px solid;cursor:pointer;background:transparent;color:${ESTADO_COLOR[p.estado]||'var(--ink4)'};border-color:${ESTADO_COLOR[p.estado]||'var(--cream3)'};font-family:'DM Sans',sans-serif;transition:all 0.15s">${p.estado}</button>
+            ${p.peso?`<span style="font-size:0.65rem;color:var(--ink4)">${p.peso}%</span>`:''}
+            ${dueDate?`<span style="font-size:0.72rem;color:${diff!==null&&diff<3?'var(--red-soft)':'var(--ink4)'}">Entrega: ${dueDate.toLocaleDateString('es-ES',{day:'numeric',month:'short'})}${diff!==null&&diff>=0?' ('+diff+'d)':''}</span>`:''}
+          </div>
+          ${p.desc?`<div style="font-size:0.78rem;color:var(--ink3);line-height:1.5">${p.desc}</div>`:''}
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+          <div style="font-family:'Playfair Display',serif;font-size:1.5rem;color:${notaColor};line-height:1">${p.nota!==null?p.nota.toFixed(1):'—'}</div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-sage btn-sm" onclick="editProyecto(${p.id},'nota')">Nota</button>
+            <button class="btn btn-danger btn-sm" onclick="delProyecto(${p.id})">×</button>
+          </div>
+        </div>
+      </div>
+    `;
+    el.appendChild(card);
+  });
+}
+
+// ─────────────────────────────────────────
+// DATALIST (autocompletar asignaturas)
+// ─────────────────────────────────────────
+function updateDatalist(){
+  const dl=document.getElementById('asig-datalist'); if(!dl) return;
+  dl.innerHTML='';
+  S.asignaturas.forEach(a=>{
+    const opt=document.createElement('option'); opt.value=a.nombre; dl.appendChild(opt);
+  });
+}
+// ─────────────────────────────────────────
+(function setupPWA(){
+  // Generate SVG icon as data URL — a leaf on forest green background
+  const iconSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+    <rect width="512" height="512" rx="112" fill="#2d5016"/>
+    <path d="M128 384c0 0 40-160 240-200C368 384 208 416 128 384z" fill="#8aab6a"/>
+    <line x1="128" y1="384" x2="284" y2="228" stroke="#c5dba8" stroke-width="14" stroke-linecap="round"/>
+    <path d="M256 160 Q290 120 320 100 Q310 140 280 168 Z" fill="#c5dba8"/>
+  </svg>`;
+  const iconURL = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(iconSVG);
+
+  // Set apple touch icon
+  const appleIcon = document.getElementById('pwa-icon');
+  if(appleIcon) appleIcon.href = iconURL;
+
+  // Inline manifest via blob
+  const manifest = {
+    name: 'Musgo',
+    short_name: 'Musgo',
+    description: 'Tu diario de hábitos universitarios',
+    start_url: '.',
+    display: 'standalone',
+    background_color: '#f5f0e8',
+    theme_color: '#2d5016',
+    orientation: 'portrait',
+    icons: [
+      { src: iconURL, sizes: '192x192', type: 'image/svg+xml', purpose: 'any maskable' },
+      { src: iconURL, sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' }
+    ]
+  };
+  const manifestBlob = new Blob([JSON.stringify(manifest)], {type:'application/json'});
+  const manifestURL = URL.createObjectURL(manifestBlob);
+  const manifestLink = document.getElementById('pwa-manifest');
+  if(manifestLink) manifestLink.href = manifestURL;
+
+  // Service Worker (inline via blob)
+  if('serviceWorker' in navigator){
+    const swCode = `
+const CACHE='musgo-v1';
+const ASSETS=['./'];
+self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS))));
+self.addEventListener('fetch',e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request))));
+`;
+    const swBlob = new Blob([swCode], {type:'application/javascript'});
+    const swURL = URL.createObjectURL(swBlob);
+    navigator.serviceWorker.register(swURL).catch(()=>{});
+  }
+})();
+
+// Install prompt
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', e=>{
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  const btn = document.getElementById('install-btn');
+  if(btn) btn.classList.add('visible');
+});
+window.addEventListener('appinstalled', ()=>{
+  const btn = document.getElementById('install-btn');
+  if(btn) btn.classList.remove('visible');
+  showToast('App instalada correctamente.');
+});
+
+function installPWA(){
+  if(!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  deferredInstallPrompt.userChoice.then(()=>{ deferredInstallPrompt=null; });
+}
+</script>
+</body>
+</html>
